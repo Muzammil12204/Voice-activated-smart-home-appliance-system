@@ -1,0 +1,126 @@
+Circuit connections (Arduino UNO)
+1) Bluetooth (HC-05)
+
+HC-05 is 3.3V logic on RX. Don’t drive it directly with Arduino’s 5V TX — use a simple resistor divider.
+
+HC-05 VCC → 5V
+
+HC-05 GND → GND
+
+HC-05 TXD → Arduino D10 (SoftwareSerial RX)
+
+HC-05 RXD → Arduino D11 through divider:
+
+Arduino D11 ─ 1 kΩ ─┬─> HC-05 RXD
+
+From the junction ─ 2 kΩ ─> GND
+(Creates ~3.3 V from Arduino’s 5 V TX)
+
+(If your HC-05 board already has an onboard divider/level shifter, you can connect D11 → RXD directly. Most don’t—use the divider to be safe.)
+
+2) Relay module (5 V, opto-isolated preferred)
+
+Use a 2- or 4-channel 5 V relay module with opto-isolation.
+
+Relay VCC → 5V
+
+Relay GND → GND
+
+Relay IN1 → Arduino D2 (Fan)
+
+Relay IN2 → Arduino D3 (Light)
+
+Relay IN3 → Arduino D4 (Buzzer) (if your module has 3+ channels)
+
+Many relay boards are active-LOW: writing LOW may turn the relay ON.
+My code assumes active-HIGH (HIGH = ON). If your board is active-LOW, either invert the pins in code or flip the wiring logic (see “Active-LOW note” below).
+
+3) AC/Load side (⚠️ mains safety)
+
+Each relay has COM, NO, NC terminals.
+
+For each appliance (fan/light/buzzer):
+
+Mains Live (L) → Relay COM
+
+Relay NO → Appliance Live input
+
+Mains Neutral (N) → Appliance Neutral input (direct)
+
+Earth (if present) → Appliance Earth (direct)
+
+NO = Normally Open (appliance OFF until relay energizes).
+NC = Normally Closed (appliance ON by default) — usually avoid for safety.
+
+Text “diagram” (quick view)
+[Arduino UNO]            [HC-05]                  [Relay Module]
+D10  <------------------- TXD
+D11 --1kΩ--+------------> RXD
+           |
+          2kΩ
+           |
+          GND
+5V  --------------------> VCC                    VCC <--------- 5V
+GND --------------------> GND                    GND <--------- GND
+D2  -------------------------------------------> IN1  (Fan)
+D3  -------------------------------------------> IN2  (Light)
+D4  -------------------------------------------> IN3  (Buzzer)
+
+Mains L ----> COM_RLY1 --- NO_RLY1 ---> Fan Live
+Mains N -------------------------------> Fan Neutral
+
+Mains L ----> COM_RLY2 --- NO_RLY2 ---> Light Live
+Mains N -------------------------------> Light Neutral
+
+Power & grounding tips
+
+Use the Arduino’s 5 V for HC-05 only (very low current).
+
+Relays draw more current (70–90 mA each). If you use 2–4 relays, it’s best to power the relay board from a separate 5 V supply (e.g., 5 V/1 A).
+
+Common GND is required between Arduino, HC-05, and relay board.
+
+If your relay board has JD-VCC / VCC jumper for opto-isolation:
+
+Remove the jumper,
+
+JD-VCC ← external 5 V for relays,
+
+VCC ← Arduino 5 V for logic,
+
+GNDs must still be common.
+
+Active-LOW relay note (very common)
+
+If your relay turns ON when the Arduino pin is LOW:
+
+In setup(), set all pins HIGH to keep relays OFF at boot:
+
+pinMode(fan, OUTPUT); digitalWrite(fan, HIGH);
+pinMode(light, OUTPUT); digitalWrite(light, HIGH);
+pinMode(buzzer, OUTPUT); digitalWrite(buzzer, HIGH);
+
+
+In the command handlers, swap HIGH/LOW (e.g., "fan on" → LOW, "fan off" → HIGH).
+
+Voice command examples (Android → HC-05)
+
+fan on, fan off
+
+light on, light off
+
+buzzer on, buzzer off
+
+Use a Bluetooth voice control app (e.g., “Arduino Bluetooth Voice Control”), set delimiter # if you kept that in code, and pair with HC-05 (PIN 1234 or 0000).
+
+Safety checklist (mains voltage)
+
+Work with mains only if you’re trained. Otherwise, ask a qualified person to do the AC wiring.
+
+Use a proper relay module with optical isolation, flyback diodes, and screw terminals.
+
+Place everything in an insulated enclosure; keep low-voltage (Arduino) and mains wires separated.
+
+Add fuses and strain relief for appliance leads.
+
+Never touch or adjust wiring while powered.
